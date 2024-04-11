@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "-": "^0.0.1",
+    "D": "^1.0.0",
+    "docxtemplater": "^3.46.0",
+    "file-saver": "^2.0.5",
+    "html-docx": "^1.2.0",
+    "html-docx-js": "^0.3.1",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.7.0",
+    "package": "^1.0.1"
+  },
+  "name": "fotos-laudo---javascript",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "install-deps": "npm install"
+  },
+  
+  "keywords": [],
+  "author": "David Venancio",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^29.0.1",
+    "electron-packager": "^17.1.2"
+  },
+  "description": ""
+}

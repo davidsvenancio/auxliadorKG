@@ -1,0 +1,138 @@
+let photoCount = 1;
+
+function inserirFotos() {
+    const fileInput = document.getElementById('file-input');
+    const photoGallery = document.getElementById('photo-gallery');
+    const files = fileInput.files;
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function() {
+            const photoContainer = document.createElement('div');
+            photoContainer.classList.add('photo-container');
+
+            const photo = document.createElement('img');
+            photo.src = reader.result;
+            photo.width = 300;
+            photo.alt = `Foto ${photoCount}`;
+
+            const legendaInput = document.createElement('input');
+            legendaInput.type = 'text';
+            legendaInput.placeholder = 'Legenda';
+
+            const observacaoInput = document.createElement('input');
+            observacaoInput.type = 'text';
+            observacaoInput.placeholder = 'Observação';
+
+            photoContainer.appendChild(photo);
+            photoContainer.appendChild(legendaInput);
+            photoContainer.appendChild(observacaoInput);
+
+            const figuraNumeral = document.createElement('p');
+            figuraNumeral.textContent = `Figura ${photoCount}`;
+            photoContainer.appendChild(figuraNumeral);
+
+            photoGallery.appendChild(photoContainer);
+
+            photoCount++;
+        }
+    }
+}
+
+function gerarListaDeFiguras() {
+    const legendaInputs = document.querySelectorAll('input[type="text"][placeholder="Legenda"]');
+    const observacaoInputs = document.querySelectorAll('input[type="text"][placeholder="Observação"]');
+
+    let legendaValue = '';
+    let observacaoValue = '';
+
+    // Obtém os valores dos campos de legenda e observação da primeira figura
+    if (legendaInputs.length > 0 && observacaoInputs.length > 0) {
+        legendaValue = legendaInputs[0].value;
+        observacaoValue = observacaoInputs[0].value;
+    }
+
+    // Insere os mesmos valores em todos os campos de legenda e observação
+    legendaInputs.forEach(input => input.value = legendaValue);
+    observacaoInputs.forEach(input => input.value = observacaoValue);
+}
+
+function exportarParaDocx() {
+    const photoGallery = document.getElementById('photo-gallery');
+    const doc = new docx.Document();
+
+    // Array para armazenar promessas de conversão de imagens para base64 e adição ao documento
+    const promises = [];
+
+    // Percorre cada container de imagem na galeria de fotos
+    photoGallery.querySelectorAll('.photo-container').forEach((container, index) => {
+        // Obtém a imagem, legenda e observação do container atual
+        const img = container.querySelector('img');
+        const legenda = container.querySelector('input[type="text"][placeholder="Legenda"]').value;
+        const observacao = container.querySelector('input[type="text"][placeholder="Observação"]').value;
+
+        // Verifica se o usuário inseriu uma imagem
+        if (img.src.startsWith('data:image')) {
+            // Se a imagem já estiver no formato base64, adiciona diretamente ao documento
+            const image = docx.Media.addImage(doc, img.src);
+            doc.createImage(image, 300, 300); // Ajuste o tamanho conforme necessário
+
+            // Adiciona a legenda e a observação como texto
+            doc.addParagraph(`Figura ${index + 1}: ${legenda}`);
+            doc.addParagraph(observacao);
+        } else {
+            // Se a imagem for um arquivo, converte para base64 e adiciona ao documento
+            const promise = new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataUrl = reader.result;
+                    const image = docx.Media.addImage(doc, dataUrl);
+                    doc.createImage(image, 300, 300); // Ajuste o tamanho conforme necessário
+
+                    // Adiciona a legenda e a observacao como texto
+                    doc.addParagraph(`Figura ${index + 1}: ${legenda}`);
+                    doc.addParagraph(observacao);
+
+                    resolve();
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(img.file);
+            });
+
+            promises.push(promise);
+        }
+    });
+
+    // Aguarda todas as promessas serem resolvidas antes de criar o blob e o link de download
+    Promise.all(promises).then(() => {
+        docx.Packer.toBlob(doc).then(blob => {
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.href = url;
+            a.download = 'documento.docx';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    });
+}
+
+function resetarPagina() {
+    // Limpa a galeria de fotos
+    document.getElementById('photo-gallery').innerHTML = '';
+
+    // Reseta o contador de fotos
+    photoCount = 1;
+
+    // Rola para o topo da página
+    window.scrollTo(0, 0);
+}
+
+function scrollDown() {
+    // Rola a página para o final
+    window.scrollTo(0, document.body.scrollHeight);
+}

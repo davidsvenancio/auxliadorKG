@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxiliador de Laudos (Versão 1.0)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px 0 0;
+            padding: 0;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        #container {
+            max-width: 800px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+
+        #photo-form {
+            margin-bottom: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            background-color: #ffffff;
+            z-index: 1;
+        }
+
+        #photo-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .photo-container {
+            width: calc(50% - 10px);
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .photo-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            align-self: center;
+        }
+
+        .photo-container input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .export-button, .reset-button, .recontar-button, scroll-down-button, .validate-all-button {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 5px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .validate-all-button {
+            background-color: #28a745;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .hidden-in-docx {
+            display: none;
+        }
+
+        .marker-group {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .marker {
+            display: inline-block;
+            cursor: pointer;
+            background-color: #e9ecef;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .marker:hover {
+            background-color: #ccc;
+        }
+
+        .recontar-button {
+            padding: 5px 20px;
+            background-color: #007bff;
+            position: relative;
+        }
+
+        .recontar-button input {
+            width: 40px;
+            height: 100%;
+            border: none;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 0;
+            background-color: #fff;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="logo-container">
+            <img src="logo-kg-engenharia-09.png" alt="Logo KG Engenharia">
+        </div>
+
+        <h1>Auxiliador de Laudos (Versão 1.0)</h1>
+
+        <div id="photo-form">
+            <input type="file" id="file-input" multiple>
+            <button onclick="inserirFotos()" class="inserirarquivo-button">Inserir</button>
+            <button onclick="scrollDown()" class="scroll-down-button">Rolar para baixo</button>
+        </div>
+
+        <div id="photo-gallery"></div>
+
+        <div class="button-group">
+            <button onclick="gerarListaDeFiguras()" class="reset-button">Copiar informações para todas as imagens</button>
+            <span style="margin-right: 120px;"></span>
+            <button onclick="recontar()" class="recontar-button">Recontar</button>
+            <input type="text" id="novo-valor" placeholder="Nº" style="width: 30px;">
+        </div>
+        <button onclick="validarTodasFiguras()" class="validate-all-button">Validar Todas as Imagens</button>
+        <button onclick="exportarParaDocx()" class="export-button">Exportar arquivo *.docx</button>
+       
+    </div>
+
+    <script>
+    
+        let photoCount = 1;
+
+        function inserirFotos() {
+            const fileInput = document.getElementById('file-input');
+            const photoGallery = document.getElementById('photo-gallery');
+            const files = fileInput.files;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function() {
+                    const photoContainer = document.createElement('div');
+                    photoContainer.classList.add('photo-container');
+
+                    const photo = document.createElement('img');
+                    photo.src = reader.result;
+                    photo.width = 300;
+                    photo.alt = `Foto ${photoCount}`;
+
+                    const legendaInput = document.createElement('input');
+                    legendaInput.type = 'text';
+                    legendaInput.placeholder = 'Legenda';
+                    legendaInput.addEventListener('input', function() {
+                        updateText(this, 'legenda');
+                    });
+
+                    const observacaoInput = document.createElement('input');
+                    observacaoInput.type = 'text';
+                    observacaoInput.placeholder = 'Observação';
+                    observacaoInput.addEventListener('input', function() {
+                        updateText(this, 'observacao');
+                    });
+
+                    const markerGroup = document.createElement('div');
+                    markerGroup.classList.add('marker-group');
+
+                    const hideMarker = document.createElement('button');
+                    hideMarker.textContent = 'Validar';
+                    hideMarker.className = 'marker';
+                    hideMarker.onclick = function() {
+                        legendaInput.style.display = 'none';
+                        observacaoInput.style.display = 'none';
+                        markerGroup.style.display = 'none';
+                    };
+
+                    const deleteMarker = document.createElement('button');
+                    deleteMarker.textContent = 'Excluir';
+                    deleteMarker.className = 'marker';
+                    deleteMarker.onclick = function() {
+                        photoContainer.remove();
+                    };
+
+                    markerGroup.appendChild(hideMarker);
+                    markerGroup.appendChild(deleteMarker);
+
+                    photoContainer.appendChild(photo);
+                    photoContainer.appendChild(legendaInput);
+                    photoContainer.appendChild(observacaoInput);
+                    photoContainer.appendChild(markerGroup);
+
+                    const figuraNumeral = document.createElement('p');
+                    figuraNumeral.innerHTML = `<strong>Imagem ${photoCount}:</strong> <span class="legenda-${photoCount}"></span><span class="observacao-${photoCount}"></span>`;
+                    photoContainer.appendChild(figuraNumeral);
+
+                    photoGallery.appendChild(photoContainer);
+
+                    photoCount++;
+                }
+            }
+        }
+
+        function updateText(element, type) {
+            const photoNum = element.parentNode.querySelector('img').alt.split(' ')[1];
+            const textContainer = document.querySelector(`.photo-container img[alt="Foto ${photoNum}"]`).parentNode.querySelector(`.${type}-${photoNum}`);
+            textContainer.textContent = element.value ? `${element.value}. ` : '';
+        }
+
+        function gerarListaDeFiguras() {
+            const legendaInputs = document.querySelectorAll('input[type="text"][placeholder="Legenda"]');
+            const observacaoInputs = document.querySelectorAll('input[type="text"][placeholder="Observação"]');
+
+            let legendaValue = '';
+            let observacaoValue = '';
+
+            if (legendaInputs.length > 0 && observacaoInputs.length > 0) {
+                legendaValue = legendaInputs[0].value;
+                observacaoValue = observacaoInputs[0].value;
+            }
+
+            legendaInputs.forEach(input => input.value = legendaValue);
+            observacaoInputs.forEach(input => input.value = observacaoValue);
+
+            legendaInputs.forEach(input => {
+                const photoNum = input.parentNode.querySelector('img').alt.split(' ')[1];
+                const textContainer = document.querySelector(`.photo-container img[alt="Foto ${photoNum}"]`).parentNode.querySelector(`.legenda-${photoNum}`);
+                textContainer.textContent = input.value ? `${input.value}. ` : '';
+            });
+
+            observacaoInputs.forEach(input => {
+                const photoNum = input.parentNode.querySelector('img').alt.split(' ')[1];
+                const textContainer = document.querySelector(`.photo-container img[alt="Foto ${photoNum}"]`).parentNode.querySelector(`.observacao-${photoNum}`);
+                textContainer.textContent = input.value ? `${input.value}. ` : '';
+            });
+        }
+
+        function exportarParaDocx() {
+            // Oculta os botões da exportação durante a geração do arquivo .docx
+            const exportButton = document.querySelector('.export-button');
+            const validateAllButton = document.querySelector('.validate-all-button');
+            const inserirButton =  document.querySelector('.inserirarquivo-button');
+            const scrollButton = document.querySelector('.scroll-down-button');
+            const resetButton = document.querySelector('.reset-button');
+            const recontarButton = document.querySelector('.recontar-button');
+            exportButton.textContent = '' // Remove o texto do botão "Exportar arquivo *.docx"
+            validateAllButton.textContent = '' // Remove o texto do botão "Validar Todas as Imagens"
+            inserirButton.textContent = '' //remove o texto do botao Inserir 
+            scrollButton.textContent = '' //remove o scroll
+            resetButton.textContent = '' //remove Copiar informações para todas as imagens
+            recontarButton.textContent = '' //remove Recontar
+
+             // Remove os inputs da exportação
+            const legendaInputs = document.querySelectorAll('input[type="text"][placeholder="Legenda"]');
+            const observacaoInputs = document.querySelectorAll('input[type="text"][placeholder="Observação"]');
+            legendaInputs.forEach(input => input.remove());
+            observacaoInputs.forEach(input => input.remove());
+            // Remove o input da recontagem
+            //const novoValorInput = document.getElementById('novo-valor');
+            //novoValorInput.remove();
+
+
+            // Cria o arquivo .docx
+            const docContent = document.documentElement.outerHTML;
+            const modifiedDocContent = docContent.replace(/<input type="text" placeholder="Legenda" class="hidden-in-docx">/g, '').replace(/<input type="text" placeholder="Observação" class="hidden-in-docx">/g, '');
+            const blob = new Blob([modifiedDocContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.href = url;
+            a.download = 'documento.docx';
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            // Restaura os textos dos botões após a geração do arquivo .docx
+            exportButton.textContent = 'Exportar arquivo *.docx'
+            validateAllButton.textContent = 'Validar Todas as Imagens'
+            inserirButton.textContent = 'Inserir'
+            scrollButton.textContent = 'Rolar para baixo'
+            resetButton.textContent = 'Copiar informações para todas as imagens'
+            recontarButton.textContent = 'Recontar'
+            //recontarButton.innerHTML = 'Recontar <input type="text" id="novo-valor" placeholder="Nº" style="width: 30px;">';
+}
+
+        function recontar() {
+            const novoValorInput = document.getElementById('novo-valor');
+            const novoValor = parseInt(novoValorInput.value);
+
+            if (!isNaN(novoValor) && novoValor >= 1) {
+                photoCount = novoValor;
+                document.getElementById('photo-gallery').innerHTML = '';
+                // Não limpa o valor do campo de entrada após recontar
+                // novoValorInput.value = '';
+                window.scrollTo(0, 0);
+            } else {
+                alert('Por favor, insira um número válido maior ou igual a 1.');
+            }
+        }
+
+        function scrollDown() {
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function validarTodasFiguras() {
+            const hideMarkers = document.querySelectorAll('.marker-group button:first-child');
+            hideMarkers.forEach(button => button.click());
+        }
+    </script>
+</body>
+</html>
